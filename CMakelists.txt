@@ -65,7 +65,7 @@ if (BUILD_TESTS)
         target_link_libraries(${TEST_NAME}  PRIVATE 
             GTest::gtest 
             GTest::gtest_main
-            gjson
+            gamealgo
         )
         
         # # 添加测试
