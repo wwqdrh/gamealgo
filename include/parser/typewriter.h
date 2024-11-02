@@ -23,6 +23,7 @@ public:
     Token active_styles;
     TokenType current_type = TokenType::TEXT;
 
+    int current_pid = 0;
     while (current_pos < text.length()) {
       // 检查是否遇到标签开始符号
       if (text[current_pos] == '[') {
@@ -42,23 +43,25 @@ public:
             // 更新样式和当前类型
             update_active_styles(active_styles, *next_token);
             current_type = next_token->type;
-
             // 处理标签内的文本内容
-            for (char c : next_token->content) {
-              tokens.push_back(create_token(next_token->pid, current_type,
-                                            std::string(1, c), active_styles));
+            for (std::string c : toRune(next_token->content)) {
+              tokens.push_back(
+                  create_token(current_pid, current_type, c, active_styles));
             }
-
+            current_pid++;
             current_pos = next_token->end_pos;
             continue;
           }
         }
       }
 
-      // 处理普通文本
-      tokens.push_back(create_token(
-          0, current_type, std::string(1, text[current_pos]), active_styles));
-      current_pos++;
+      std::string rune = getUtf8Char(text, current_pos);
+      if (rune != "[" && rune != "]") {
+        // 处理普通文本
+        tokens.push_back(
+            create_token(current_pid, TokenType::TEXT, rune, active_styles));
+      }
+      current_pos += rune.size();
     }
 
     return tokens;
@@ -86,6 +89,35 @@ private:
     } else if (tag == "[/wave]") {
       active_styles["wave"] = false;
     }
+  }
+
+  std::vector<std::string> toRune(const std::string &text) {
+    std::vector<std::string> runes;
+    size_t pos = 0;
+    while (pos < text.length()) {
+      std::string rune = getUtf8Char(text, pos);
+      runes.push_back(rune);
+      pos += rune.length();
+    }
+    return runes;
+  }
+
+  std::string getUtf8Char(const std::string &str, size_t pos) {
+    if (pos >= str.length())
+      return "";
+    size_t len = 1;
+    auto c = static_cast<unsigned char>(str[pos]);
+    if ((c & 0x80) == 0)
+      len = 1;
+    if ((c & 0xE0) == 0xC0)
+      len = 2;
+    if ((c & 0xF0) == 0xE0)
+      len = 3;
+    if ((c & 0xF8) == 0xF0)
+      len = 4;
+    if (pos + len > str.length())
+      return "";
+    return str.substr(pos, len);
   }
 
   std::optional<NextToken> parse_tag(const std::string &text,
