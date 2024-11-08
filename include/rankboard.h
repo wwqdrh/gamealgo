@@ -4,8 +4,11 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "cross.h"
 
 namespace gamealgo {
 // 排行榜涉及排序和排名算法，通常按玩家得分、完成时间或其他指标排序。
